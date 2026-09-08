@@ -9,8 +9,7 @@ let appData = {
     orgName: 'আমার প্রতিষ্ঠান',
     transactions: [],
     categories: { ...defaultCategories },
-    bank1: { name: 'ব্যাংক-১', balance: 0 },
-    bank2: { name: 'ব্যাংক-২', balance: 0 }
+    dailyBalances: {} // {date: {bank1: 0, bank2: 0, cash: 0, bank1Name: '', bank2Name: ''}}
 };
 
 let currentCategoryType = 'income';
@@ -66,12 +65,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // ব্যালান্সিং ডেট পিকার
     document.getElementById('balanceDate').addEventListener('change', updateDailyBalance);
 
+    // ব্যাংক ইনপুট চেঞ্জ ইভেন্ট
+    document.getElementById('bank1Balance').addEventListener('input', function() {
+        updateCashBalance();
+    });
+    document.getElementById('bank2Balance').addEventListener('input', function() {
+        updateCashBalance();
+    });
+    document.getElementById('bankName1').addEventListener('change', function() {
+        saveBankInfo();
+    });
+    document.getElementById('bankName2').addEventListener('change', function() {
+        saveBankInfo();
+    });
+
     // প্রাথমিক আপডেট
     updateCategoryDropdown();
     renderCategoryList();
     renderTransactionsList();
     updateDailyBalance();
-    updateBankBalance();
 });
 
 // ট্যাব সুইচ করা
@@ -145,7 +157,6 @@ function addTransaction() {
     saveData();
     renderTransactionsList();
     updateDailyBalance();
-    updateBankBalance();
 
     // ফর্ম রিসেট
     document.getElementById('amount').value = '';
@@ -164,7 +175,7 @@ function renderTransactionsList() {
     const sorted = [...appData.transactions].reverse().slice(0, 50);
 
     if (sorted.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #95a5a6;">এখনও কোন লেনদেন নেই</p>';
+        container.innerHTML = '<p style="text-align: center; color: #95a5a6;">এখনও কোনো লেনদেন নেই</p>';
         return;
     }
 
@@ -203,7 +214,6 @@ function deleteTransaction(id) {
         saveData();
         renderTransactionsList();
         updateDailyBalance();
-        updateBankBalance();
     }
 }
 
@@ -272,6 +282,7 @@ function deleteCategory(categoryName, type) {
 function updateDailyBalance() {
     const selectedDate = document.getElementById('balanceDate').value;
     
+    // নির্বাচিত তারিখের আয় ও ব্যয়
     const dayIncome = appData.transactions
         .filter(t => t.date === selectedDate && t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -282,6 +293,7 @@ function updateDailyBalance() {
 
     const dayBalance = dayIncome - dayExpense;
 
+    // দৈনিক ব্যালান্স প্রদর্শন করা
     document.getElementById('dayIncome').textContent = dayIncome.toLocaleString('bn-BD') + ' টাকা';
     document.getElementById('dayExpense').textContent = dayExpense.toLocaleString('bn-BD') + ' টাকা';
     
@@ -289,49 +301,109 @@ function updateDailyBalance() {
     balanceElement.textContent = dayBalance.toLocaleString('bn-BD') + ' টাকা';
     balanceElement.style.color = dayBalance >= 0 ? '#27ae60' : '#e74c3c';
 
-    // হাতে নগদ আপডেট করা
-    const bank1Value = parseFloat(document.getElementById('bank1Balance').value) || 0;
-    const bank2Value = parseFloat(document.getElementById('bank2Balance').value) || 0;
-    const totalBankBalance = bank1Value + bank2Value;
-    
-    // সব লেনদেনের মোট
-    const totalIncome = appData.transactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
+    // ব্যাংক ও নগদ ব্যালান্স লোড করা
+    loadBankCashBalance(selectedDate, dayBalance);
+}
 
-    const totalExpense = appData.transactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+// ব্যাংক এবং নগদ ব্যালান্স লোড করা
+function loadBankCashBalance(date, dayBalance) {
+    if (!appData.dailyBalances[date]) {
+        appData.dailyBalances[date] = {
+            bank1: 0,
+            bank2: 0,
+            cash: dayBalance,
+            bank1Name: 'ব্যাংক-১',
+            bank2Name: 'ব্যাংক-२'
+        };
+    }
 
-    const cashBalance = (totalIncome - totalExpense) - totalBankBalance;
+    const balance = appData.dailyBalances[date];
+    document.getElementById('bankName1').value = balance.bank1Name || 'ব্যাংক-१';
+    document.getElementById('bank1Balance').value = balance.bank1 || 0;
+    document.getElementById('bankName2').value = balance.bank2Name || 'ব্যাংক-२';
+    document.getElementById('bank2Balance').value = balance.bank2 || 0;
+
+    // নগদ ব্যালান্স দেখানো
+    const cashBalance = dayBalance - ((balance.bank1 || 0) + (balance.bank2 || 0));
     const cashElement = document.getElementById('cashBalance');
     cashElement.textContent = cashBalance.toLocaleString('bn-BD') + ' টাকা';
     cashElement.style.color = cashBalance >= 0 ? '#27ae60' : '#e74c3c';
 }
 
+// নগদ ব্যালান্স স্বয়ংক্রিয়ভাবে আপডেট করা
+function updateCashBalance() {
+    const selectedDate = document.getElementById('balanceDate').value;
+    const dayBalanceText = document.getElementById('dayBalance').textContent;
+    const dayBalance = parseFloat(dayBalanceText.replace(/[^\d.-]/g, '')) || 0;
+    
+    if (!appData.dailyBalances[selectedDate]) {
+        appData.dailyBalances[selectedDate] = {
+            bank1: 0,
+            bank2: 0,
+            cash: 0,
+            bank1Name: 'ব্যাংক-१',
+            bank2Name: 'ব্যাংক-२'
+        };
+    }
+
+    const bank1Value = parseFloat(document.getElementById('bank1Balance').value) || 0;
+    const bank2Value = parseFloat(document.getElementById('bank2Balance').value) || 0;
+    const totalBankBalance = bank1Value + bank2Value;
+    
+    // নগদ = মোট দৈনিক ব্যালান্স - ব্যাংক ব্যালান্স
+    const cashBalance = dayBalance - totalBankBalance;
+    
+    appData.dailyBalances[selectedDate].bank1 = bank1Value;
+    appData.dailyBalances[selectedDate].bank2 = bank2Value;
+    appData.dailyBalances[selectedDate].cash = cashBalance;
+    
+    saveData();
+
+    const cashElement = document.getElementById('cashBalance');
+    cashElement.textContent = cashBalance.toLocaleString('bn-BD') + ' টাকা';
+    cashElement.style.color = cashBalance >= 0 ? '#27ae60' : '#e74c3c';
+}
+
+// ব্যাংক তথ্য সংরক্ষণ করা
+function saveBankInfo() {
+    const selectedDate = document.getElementById('balanceDate').value;
+    
+    if (!appData.dailyBalances[selectedDate]) {
+        appData.dailyBalances[selectedDate] = {
+            bank1: 0,
+            bank2: 0,
+            cash: 0
+        };
+    }
+
+    appData.dailyBalances[selectedDate].bank1Name = document.getElementById('bankName1').value;
+    appData.dailyBalances[selectedDate].bank2Name = document.getElementById('bankName2').value;
+    
+    saveData();
+}
+
 // ব্যাংক ব্যালান্স আপডেট করা
 function updateBankBalance() {
-    const bankName1 = document.getElementById('bankName1').value || 'ব্যাংক-১';
-    const bankName2 = document.getElementById('bankName2').value || 'ব্যাংক-২';
+    const selectedDate = document.getElementById('balanceDate').value;
+    const bankName1 = document.getElementById('bankName1').value || 'ব্যাংক-१';
+    const bankName2 = document.getElementById('bankName2').value || 'ব্যাংক-२';
     const bank1Balance = parseFloat(document.getElementById('bank1Balance').value) || 0;
     const bank2Balance = parseFloat(document.getElementById('bank2Balance').value) || 0;
 
-    appData.bank1 = { name: bankName1, balance: bank1Balance };
-    appData.bank2 = { name: bankName2, balance: bank2Balance };
+    if (!appData.dailyBalances[selectedDate]) {
+        appData.dailyBalances[selectedDate] = {
+            bank1: 0,
+            bank2: 0,
+            cash: 0
+        };
+    }
+
+    appData.dailyBalances[selectedDate].bank1 = bank1Balance;
+    appData.dailyBalances[selectedDate].bank2 = bank2Balance;
+    appData.dailyBalances[selectedDate].bank1Name = bankName1;
+    appData.dailyBalances[selectedDate].bank2Name = bankName2;
+    
     saveData();
-
     updateDailyBalance();
+    alert('ব্যাংক ব্যালান্স আপডেট হয়েছে!');
 }
-
-// ব্যাংক ডেটা লোড করা
-function loadBankData() {
-    document.getElementById('bankName1').value = appData.bank1.name;
-    document.getElementById('bank1Balance').value = appData.bank1.balance;
-    document.getElementById('bankName2').value = appData.bank2.name;
-    document.getElementById('bank2Balance').value = appData.bank2.balance;
-}
-
-// ডকুমেন্ট লোড হওয়ার পর
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(loadBankData, 100);
-});
