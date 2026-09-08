@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>আর্থিক ব্যবস্থাপনা</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- হেডার -->
+        <div class="header">
+            <div class="org-section">
+                <label for="orgName">প্রতিষ্ঠানের নাম:</label>
+                <input type="text" id="orgName" placeholder="আপনার প্রতিষ্ঠানের নাম লিখুন" />
+            </div>
+            <h1>আর্থিক ব্যবস্থাপনা</h1>
+        </div>
+
+        <!-- ট্যাব নেভিগেশন -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="transaction">লেনদেন</button>
+            <button class="tab-btn" data-tab="balancing">ব্যালান্সিং</button>
+        </div>
+
+        <!-- ট্যাব ১: লেনদেন -->
+        <div id="transaction" class="tab-content active">
+            <div class="main-content">
+                <!-- বাম দিক: লেনদেন ফর্ম -->
+                <div class="left-section">
+                    <div class="form-section">
+                        <h2>লেনদেন যোগ করুন</h2>
+                        
+                        <div class="form-group">
+                            <label for="transDate">তারিখ:</label>
+                            <input type="date" id="transDate" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="transType">ধরন:</label>
+                            <select id="transType">
+                                <option value="income">আয়</option>
+                                <option value="expense">ব্যয়</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category">ক্যাটাগরী:</label>
+                            <select id="category"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="amount">পরিমাণ:</label>
+                            <input type="number" id="amount" placeholder="টাকার পরিমাণ" step="0.01" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">বিবরণ:</label>
+                            <input type="text" id="description" placeholder="বিবরণ লিখুন (ঐচ্ছিক)" />
+                        </div>
+
+                        <button class="btn btn-add" onclick="addTransaction()">যোগ করুন</button>
+                    </div>
+
+                    <!-- লেনদেনের তালিকা -->
+                    <div class="transactions-list">
+                        <h2>সম্প্রতি যোগ করা লেনদেন</h2>
+                        <div id="transactionsList"></div>
+                    </div>
+                </div>
+
+                <!-- ডান দিক: ক্যাটাগরী ব্যবস্থাপনা -->
+                <div class="right-section">
+                    <div class="category-section">
+                        <h2>ক্যাটাগরী ব্যবস্থাপনা</h2>
+                        
+                        <div class="category-tabs">
+                            <button class="category-tab-btn active" data-cat-type="income">আয়ের ক্যাটাগরী</button>
+                            <button class="category-tab-btn" data-cat-type="expense">ব্যয়ের ক্যাটাগরী</button>
+                        </div>
+
+                        <div class="category-add">
+                            <input type="text" id="newCategory" placeholder="নতুন ক্যাটাগরী" />
+                            <button class="btn btn-small" onclick="addCategory()">যোগ করুন</button>
+                        </div>
+
+                        <div class="category-list">
+                            <h3>আয়ের ক্যাটাগরী</h3>
+                            <div id="incomeCategoryList"></div>
+                            
+                            <h3 style="margin-top: 20px;">ব্যয়ের ক্যাটাগরী</h3>
+                            <div id="expenseCategoryList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ট্যাব ২: ব্যালান্সিং -->
+        <div id="balancing" class="tab-content">
+            <div class="balancing-section">
+                <h2>ব্যালান্সিং ব্যবস্থাপনা</h2>
+                
+                <div class="balancing-grid">
+                    <!-- দৈনিক ব্যালান্স -->
+                    <div class="balance-card">
+                        <h3>দৈনিক ব্যালান্স</h3>
+                        <div class="form-group">
+                            <label for="balanceDate">তারিখ নির্বাচন করুন:</label>
+                            <input type="date" id="balanceDate" />
+                        </div>
+                        <div class="balance-detail">
+                            <div class="balance-item">
+                                <span>ঐ তারিখের আয়:</span>
+                                <span id="dayIncome" class="amount income">০ টাকা</span>
+                            </div>
+                            <div class="balance-item">
+                                <span>ঐ তারিখের ব্যয়:</span>
+                                <span id="dayExpense" class="amount expense">০ টাকা</span>
+                            </div>
+                            <div class="balance-item total">
+                                <span>দৈনিক ব্যালান্স:</span>
+                                <span id="dayBalance" class="amount">০ টাকা</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ব্যাংক এবং নগদ -->
+                    <div class="balance-card">
+                        <h3>ব্যাংক এবং নগদ ব্যালান্স</h3>
+                        
+                        <div class="bank-section">
+                            <h4>ব্যাংক-১</h4>
+                            <div class="form-group">
+                                <label for="bankName1">নাম:</label>
+                                <input type="text" id="bankName1" placeholder="ব্যাংকের নাম" />
+                            </div>
+                            <div class="form-group">
+                                <label for="bank1Balance">ব্যালান্স:</label>
+                                <input type="number" id="bank1Balance" placeholder="টাকার পরিমাণ" step="0.01" />
+                            </div>
+                        </div>
+
+                        <div class="bank-section">
+                            <h4>ব্যাংক-২</h4>
+                            <div class="form-group">
+                                <label for="bankName2">নাম:</label>
+                                <input type="text" id="bankName2" placeholder="ব্যাংকের নাম" />
+                            </div>
+                            <div class="form-group">
+                                <label for="bank2Balance">ব্যালান্স:</label>
+                                <input type="number" id="bank2Balance" placeholder="টাকার পরিমাণ" step="0.01" />
+                            </div>
+                        </div>
+
+                        <div class="cash-section">
+                            <h4>হাতে নগদ (স্বয়ংক্রিয়)</h4>
+                            <div class="balance-item">
+                                <span>হাতে নগদ:</span>
+                                <span id="cashBalance" class="amount">০ টাকা</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-update" onclick="updateBankBalance()">আপডেট করু���</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
