@@ -318,15 +318,15 @@ function loadBankCashBalance(date, dayBalance) {
             bank1: 0,
             bank2: 0,
             cash: dayBalance,
-            bank1Name: 'ব্যাংক-१',
-            bank2Name: 'ব্যাংক-२'
+            bank1Name: '',
+            bank2Name: ''
         };
     }
 
     const balance = appData.dailyBalances[date];
-    document.getElementById('bankName1').value = balance.bank1Name || 'ব্যাংक-१';
+    document.getElementById('bankName1').value = balance.bank1Name || '';
     document.getElementById('bank1Balance').value = balance.bank1 || 0;
-    document.getElementById('bankName2').value = balance.bank2Name || 'ব্যাংक-२';
+    document.getElementById('bankName2').value = balance.bank2Name || '';
     document.getElementById('bank2Balance').value = balance.bank2 || 0;
 
     // নগদ ব্যালান্স দেখানো
@@ -347,8 +347,8 @@ function updateCashBalance() {
             bank1: 0,
             bank2: 0,
             cash: 0,
-            bank1Name: 'ব্যাংক-१',
-            bank2Name: 'ব্যাংক-२'
+            bank1Name: '',
+            bank2Name: ''
         };
     }
 
@@ -391,8 +391,8 @@ function saveBankInfo() {
 // ব্যাংক ব্যালান্স আপডেট করা
 function updateBankBalance() {
     const selectedDate = document.getElementById('balanceDate').value;
-    const bankName1 = document.getElementById('bankName1').value || 'ব্যাংক-१';
-    const bankName2 = document.getElementById('bankName2').value || 'ব্যাংক-२';
+    const bankName1 = document.getElementById('bankName1').value || '';
+    const bankName2 = document.getElementById('bankName2').value || '';
     const bank1Balance = parseFloat(document.getElementById('bank1Balance').value) || 0;
     const bank2Balance = parseFloat(document.getElementById('bank2Balance').value) || 0;
 
@@ -438,11 +438,26 @@ function generateReport() {
         dates.push(dateStr);
     }
 
+    // প্রথম তারিখ থেকে ব্যাংক নামগুলি পান
+    let bank1Name = '';
+    let bank2Name = '';
+    
+    for (let date of dates) {
+        if (appData.dailyBalances[date]) {
+            if (!bank1Name && appData.dailyBalances[date].bank1Name) {
+                bank1Name = appData.dailyBalances[date].bank1Name;
+            }
+            if (!bank2Name && appData.dailyBalances[date].bank2Name) {
+                bank2Name = appData.dailyBalances[date].bank2Name;
+            }
+        }
+    }
+
     // রিপোর্ট ডেটা সংগ্রহ করা
     let html = '<table class="report-table"><thead><tr>';
     html += '<th>তারিখ</th>';
-    html += `<th>${appData.dailyBalances[dates[0]]?.bank1Name || 'ব্যাংক-१'}</th>`;
-    html += `<th>${appData.dailyBalances[dates[0]]?.bank2Name || 'ব্যাংক-२'}</th>`;
+    html += `<th>${bank1Name || 'ব্যাংক-१'}</th>`;
+    html += `<th>${bank2Name || 'ব্যাংক-२'}</th>`;
     html += '<th>মোট ব্যাংক</th>';
     html += '</tr></thead><tbody>';
 
@@ -483,11 +498,11 @@ function generateReport() {
     // সারসংক্ষেপ
     html += `<div class="report-summary">
         <div class="summary-row">
-            <span class="summary-label">মোট ${appData.dailyBalances[dates[0]]?.bank1Name || 'ব্যাংক-१'}:</span>
+            <span class="summary-label">মোট ${bank1Name || 'ব্যাংক-१'}:</span>
             <span class="summary-value">${totalBank1.toLocaleString('bn-BD')} টাকা</span>
         </div>
         <div class="summary-row">
-            <span class="summary-label">মোট ${appData.dailyBalances[dates[0]]?.bank2Name || 'ব্যাংক-२'}:</span>
+            <span class="summary-label">মোট ${bank2Name || 'ব্যাংক-२'}:</span>
             <span class="summary-value">${totalBank2.toLocaleString('bn-BD')} টাকা</span>
         </div>
         <div class="summary-row" style="background-color: rgba(255, 255, 255, 0.2);">
