@@ -79,6 +79,12 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBankInfo();
     });
 
+    // রিপোর্ট ডেট সেট করা
+    const today = new Date().toISOString().split('T')[0];
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    document.getElementById('reportStartDate').value = firstDay;
+    document.getElementById('reportEndDate').value = today;
+
     // প্রাথমিক আপডেট
     updateCategoryDropdown();
     renderCategoryList();
@@ -312,15 +318,15 @@ function loadBankCashBalance(date, dayBalance) {
             bank1: 0,
             bank2: 0,
             cash: dayBalance,
-            bank1Name: 'ব্যাংক-১',
+            bank1Name: 'ব্যাংক-१',
             bank2Name: 'ব্যাংক-२'
         };
     }
 
     const balance = appData.dailyBalances[date];
-    document.getElementById('bankName1').value = balance.bank1Name || 'ব্যাংক-१';
+    document.getElementById('bankName1').value = balance.bank1Name || 'ব্যাংक-१';
     document.getElementById('bank1Balance').value = balance.bank1 || 0;
-    document.getElementById('bankName2').value = balance.bank2Name || 'ব্যাংক-२';
+    document.getElementById('bankName2').value = balance.bank2Name || 'ব্যাংक-२';
     document.getElementById('bank2Balance').value = balance.bank2 || 0;
 
     // নগদ ব্যালান্স দেখানো
@@ -406,4 +412,89 @@ function updateBankBalance() {
     saveData();
     updateDailyBalance();
     alert('ব্যাংক ব্যালান্স আপডেট হয়েছে!');
+}
+
+// রিপোর্ট তৈরি করা
+function generateReport() {
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+
+    if (!startDate || !endDate) {
+        alert('অনুগ্রহ করে উভয় তারিখ নির্বাচন করুন');
+        return;
+    }
+
+    if (startDate > endDate) {
+        alert('শুরু তারিখ শেষ তারিখের আগে হতে হবে');
+        return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dates = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        dates.push(dateStr);
+    }
+
+    // রিপোর্ট ডেটা সংগ্রহ করা
+    let html = '<table class="report-table"><thead><tr>';
+    html += '<th>তারিখ</th>';
+    html += `<th>${appData.dailyBalances[dates[0]]?.bank1Name || 'ব্যাংক-१'}</th>`;
+    html += `<th>${appData.dailyBalances[dates[0]]?.bank2Name || 'ব্যাংক-२'}</th>`;
+    html += '<th>মোট ব্যাংক</th>';
+    html += '</tr></thead><tbody>';
+
+    let totalBank1 = 0;
+    let totalBank2 = 0;
+    let totalBankAll = 0;
+
+    dates.forEach(date => {
+        const balance = appData.dailyBalances[date];
+        
+        if (balance) {
+            const bank1 = balance.bank1 || 0;
+            const bank2 = balance.bank2 || 0;
+            const totalBank = bank1 + bank2;
+
+            totalBank1 += bank1;
+            totalBank2 += bank2;
+            totalBankAll += totalBank;
+
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('bn-BD', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            html += `<tr>`;
+            html += `<td>${formattedDate}</td>`;
+            html += `<td>${bank1.toLocaleString('bn-BD')}</td>`;
+            html += `<td>${bank2.toLocaleString('bn-BD')}</td>`;
+            html += `<td style="font-weight: bold; background-color: #d5dbdb;">${totalBank.toLocaleString('bn-BD')}</td>`;
+            html += `</tr>`;
+        }
+    });
+
+    html += '</tbody></table>';
+
+    // সারসংক্ষেপ
+    html += `<div class="report-summary">
+        <div class="summary-row">
+            <span class="summary-label">মোট ${appData.dailyBalances[dates[0]]?.bank1Name || 'ব্যাংক-१'}:</span>
+            <span class="summary-value">${totalBank1.toLocaleString('bn-BD')} টাকা</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">মোট ${appData.dailyBalances[dates[0]]?.bank2Name || 'ব্যাংক-२'}:</span>
+            <span class="summary-value">${totalBank2.toLocaleString('bn-BD')} টাকা</span>
+        </div>
+        <div class="summary-row" style="background-color: rgba(255, 255, 255, 0.2);">
+            <span class="summary-label">সর্বমোট (সব ব্যাংক):</span>
+            <span class="summary-value">${totalBankAll.toLocaleString('bn-BD')} টাকা</span>
+        </div>
+    </div>`;
+
+    document.getElementById('reportContainer').innerHTML = html;
 }
